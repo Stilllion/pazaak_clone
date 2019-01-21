@@ -1,6 +1,5 @@
 #include "Game.h"
 
-
 sf::Packet& operator >>(sf::Packet& packet, Player& p){
 	return packet >> p.score >> p.standing >> p.score;
 }
@@ -76,7 +75,6 @@ int Receive(){
 
 int Listen(){
 	// Bind listner to a port
-	//sf::sleep(sf::milliseconds(10));
 	//listener.setBlocking(false);
 	if(listener.listen(25565) != sf::Socket::Done){
 		std::cout  <<  "NO connections" << std::endl;

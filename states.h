@@ -1,0 +1,1 @@
+enum States {start_game, pause_state, game_over, player_one_turn, player_two_turn, deck_builder, cancel_game};
