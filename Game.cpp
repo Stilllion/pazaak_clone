@@ -14,7 +14,6 @@ struct Button{
 	void onClick();
 };
 
-
 Button host_game(250.0, 200.0);
 Button join_game(250.0, 260.0);
 
