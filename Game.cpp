@@ -178,10 +178,6 @@ void Game::UpdateGame()
 		Reset();
 	}
 	
-	if(sf::Mouse::isButtonPressed(sf::Mouse::Right)){
-		std::cout << p2.standing << std::endl;
-	}
-	
 	if(round_count < 3 && current_state != States::game_over){
 		if(current_state == States::player_one_turn && !p1.standing){
 			if(!card_was_drawn){
@@ -193,7 +189,7 @@ void Game::UpdateGame()
 		}
 		// && sent - make sure that we sent all the data to player 2 and reset all the variables
 		if(current_state == States::player_two_turn && received){
-			std::cout << "CHE BLYAT ZA HUINYA&!" << std::endl;
+
 			if(p2.standing){
 				if(!p1.standing){
 					current_state = States::player_one_turn;
