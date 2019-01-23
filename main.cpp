@@ -1,11 +1,11 @@
 #include "Game.h"
 
 sf::Packet& operator >>(sf::Packet& packet, Player& p){
-	return packet >> p.score >> p.standing >> p.score;
+	return packet >> p.score >> p.end_turn >> p.standing >> p.score >> p.hand[0] >> p.hand[1] >> p.hand[2] >> p.hand[3];
 }
 
 sf::Packet& operator <<(sf::Packet& packet, Player& p){
-	return packet << p.score << p.standing << p.score;
+	return packet << p.score << p.end_turn << p.standing << p.score << p.hand[0] << p.hand[1] << p.hand[2] << p.hand[3];
 }
 	bool client_connected = false;
 	bool is_client = false;
@@ -39,13 +39,10 @@ int Receive(){
 		}
 		if(status == sf::Socket::Done){
 			std::cout << "SERVER RECEIVED" << std::endl;
-			packet >> g.draw_card_number >> g.hand_card_number >> g.p2;
+			packet >> g.p2_draw_card_number >> g.p2_hand_card_number >> g.p2;
+			
+			g.received = true;
 		}
-		// If we did not receive anything useful
-		if(g.draw_card_number == 999 || g.hand_card_number == 999){
-			return 0;
-		}
-		//g.received = true;
 	}
 	
 	if(is_client){
@@ -61,14 +58,11 @@ int Receive(){
 		}
 		if(status == sf::Socket::Done){
 			std::cout << "CLIENT RECEIVED" << std::endl;
-			packet >> g.draw_card_number >> g.hand_card_number >> g.p2;
-			std::cout << g.draw_card_number << g.hand_card_number << g.state_changed << std::endl;
+			packet >> g.p2_draw_card_number >> g.p2_hand_card_number >> g.p2;
+			
+			g.received = true;
 		}
 		// If we did not receive anything useful
-		if(g.draw_card_number == 999 || g.hand_card_number == 999){
-			return 0;
-		}
-		//g.received = true;
 	}
 	return 0;
 }
@@ -114,15 +108,18 @@ int Send(){
 	/*static*/ sf::Packet packet;
 	client.setBlocking(false);
 	socket.setBlocking(false);
-	packet << g.draw_card_number << g.hand_card_number << g.p1;
+	packet << g.p1_draw_card_number << g.p1_hand_card_number << g.p1;
 	
 	if(is_client){
 		if(socket.send(packet) != sf::Socket::Done){
 			std::cout << "Couldn't send" << std::endl;
 		} else {
-			g.hand_card_number = 999;
-			g.draw_card_number = 999;
 			std::cout << "SENT!" << std::endl;
+			g.p2_hand_card_number = 999;
+			g.p2_draw_card_number = 999;
+			g.p1_hand_card_number = 999;
+			g.p1_draw_card_number = 999;
+			g.p1.end_turn = false;
 		}
 	}
 	if(!is_client){
@@ -131,8 +128,11 @@ int Send(){
 			std::cout << "Couldn't send" << std::endl;
 		} else {
 			std::cout << "SENT!" << std::endl;
-			g.hand_card_number = 999;
-			g.draw_card_number = 999;
+			g.p2_hand_card_number = 999;
+			g.p2_draw_card_number = 999;
+			g.p1_hand_card_number = 999;
+			g.p1_draw_card_number = 999;
+			g.p1.end_turn = false;
 		}
 	}
 	return 0;

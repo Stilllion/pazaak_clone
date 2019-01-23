@@ -27,8 +27,8 @@ Game::Game() : dist(1, 10)
 	
 	window.create(sf::VideoMode(600, 500), "Pazaak");
 	srand(time(0));
-	window.setVerticalSyncEnabled(true);
-	//window.setFramerateLimit(1);
+	//window.setVerticalSyncEnabled(true);
+	window.setFramerateLimit(15);
 
 	SetHiddenHand();
 	SetPlayerOneHand();
@@ -123,7 +123,7 @@ void Game::HandleUserInput()
 				board.hand_card_text[i] = empty_txt; // "Delte" text from hand card txt arrs
 				
 				p1.score += p1.hand[i];
-				hand_card_number = p1.hand[i];
+				p1_hand_card_number = p1.hand[i];
 				board.player_one_score.setString(std::to_string(p1.score));
 				
 				if(!p2.standing){
@@ -139,6 +139,7 @@ void Game::HandleUserInput()
 	
 	if(board.end_turn_btn.getGlobalBounds().contains(static_cast<sf::Vector2f>(sf::Mouse::getPosition(window)))){
 		if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && btn_was_released){
+			p1.end_turn = true;
 			if(!p2.standing){
 				current_state = States::player_two_turn;	
 				state_changed = true;			
@@ -152,9 +153,9 @@ void Game::HandleUserInput()
 	if(board.stand_btn.getGlobalBounds().contains(static_cast<sf::Vector2f>(sf::Mouse::getPosition(window)))){
 		if(sf::Mouse::isButtonPressed(sf::Mouse::Left) && btn_was_released){
 			p1.standing = true;
+			p1.end_turn = true;
 			if(!p2.standing){
-				current_state = States::player_two_turn;	
-				state_changed = true;				
+				current_state = States::player_two_turn;				
 			}
 			card_was_drawn = false;
 			btn_was_released = false;
@@ -176,6 +177,11 @@ void Game::UpdateGame()
 	//	WhoIsWinner();
 		Reset();
 	}
+	
+	if(sf::Mouse::isButtonPressed(sf::Mouse::Right)){
+		std::cout << p2.standing << std::endl;
+	}
+	
 	if(round_count < 3 && current_state != States::game_over){
 		if(current_state == States::player_one_turn && !p1.standing){
 			if(!card_was_drawn){
@@ -185,23 +191,32 @@ void Game::UpdateGame()
 			}
 			HandleUserInput();
 		}
-		if(current_state == States::player_two_turn && !p2.standing /*&& received*/){
-			if(!card_was_drawn && draw_card_number != 999){
+		// && sent - make sure that we sent all the data to player 2 and reset all the variables
+		if(current_state == States::player_two_turn && received){
+			std::cout << "CHE BLYAT ZA HUINYA&!" << std::endl;
+			if(p2.standing){
+				if(!p1.standing){
+					current_state = States::player_one_turn;
+					card_was_drawn = false;
+				}
+				received = false;
+			}
+			if(!card_was_drawn && p2_draw_card_number != 999){
 				//p2.score += 
 				DrawCard(board.board_right, right_side_sprites, board.numbers_right, board.draw_card_text_right);
 				board.player_two_score.setString(std::to_string(p2.score));
-				card_was_drawn = true;				
+				card_was_drawn = true;
+				received = false;
 			}
-			if(hand_card_number != 999){
+			if(p2_hand_card_number != 999){
 				static int p2_hand_card_position = 0;
-				ConvertBackToFace(AI_hand[p2_hand_card_position], hand_card_number);
+				ConvertBackToFace(AI_hand[p2_hand_card_position], p2_hand_card_number);
 				AI_hand[p2_hand_card_position] = empty_spr;
 				++p2_hand_card_position;
 				board.player_two_score.setString(std::to_string(p2.score));
 			
 				if(!p1.standing){
 					current_state = States::player_one_turn;
-					state_changed = true;
 				}
 				//ready_to_send = true;
 				received = false;
@@ -211,11 +226,11 @@ void Game::UpdateGame()
 				p2.end_turn = false;
 				if(!p1.standing){
 					current_state = States::player_one_turn;
-					state_changed = true;
+					card_was_drawn = false;
 				}
-				//eady_to_send = true;
 				received = false;
 			}
+
 		}
 		
 	} else {
@@ -366,14 +381,14 @@ void Game::RenderStartScreen()
 int Game::DrawCard(std::array<sf::Vector2f, 9>& board_pos, std::vector<sf::Sprite>& card_sprites, std::array<sf::Vector2f, 9> numbers_pos, std::vector<sf::Text>& draw_card_text)
 {
 	int rndn = 0;
-	std::cout << draw_card_number << std::endl;
-	if(draw_card_number != 999){
-		rndn = draw_card_number;
-		draw_card_number = rndn;
-	} else {		
+	
+	if(current_state == States::player_two_turn){
+		rndn = p2_draw_card_number;
+	} else {
 		rndn = dist(mt);
-		draw_card_number = rndn;
+		p1_draw_card_number = rndn;		
 	}
+	
 	sf::Sprite new_card;
 	
 	new_card.setTexture(board.card_texture);
@@ -390,7 +405,11 @@ int Game::DrawCard(std::array<sf::Vector2f, 9>& board_pos, std::vector<sf::Sprit
 	draw_card_text.push_back(board.card_number);
 	card_sprites.push_back(new_card);
 	
-	ready_to_send = true;
+	// Send draw card number if its not player's two turn. Coz otherwise we shouldn't send anything
+	// (it will confuse the client's update cycle!)
+	if(current_state != States::player_two_turn){
+		ready_to_send = true;		
+	}
 	return rndn;
 }
 

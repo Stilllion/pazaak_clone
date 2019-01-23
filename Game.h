@@ -58,8 +58,11 @@ struct Game
 	
 	
 	// Packet data
-	int draw_card_number = 999;
-	int hand_card_number = 999;
+	int p1_draw_card_number = 999;
+	int p2_draw_card_number = 999;
+	int p1_hand_card_number = 999;
+	int p2_hand_card_number = 999;
+	
 	bool state_changed = false;
 
 	sf::Sprite empty_spr; // For deleting cards
@@ -95,6 +98,7 @@ struct Game
 	
 	bool ready_to_send = false;
 	bool received = false;
+	bool sent = false;
 	
 
 };
