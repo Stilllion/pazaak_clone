@@ -34,12 +34,17 @@ Board::Board()
 	};
 	
 	backGround_texture.loadFromFile("textures/lbl_pazaak.tga");
+	texture_turn_light.loadFromFile("textures/turn_light.tga");
+	//backGround_texture.loadFromFile("textures/800x600pazaak.tga");
 	backGround.setTexture(backGround_texture);
 	backGround.setScale(600/backGround.getLocalBounds().width, 500/backGround.getLocalBounds().height);
 	
-	deck_builder_texture.loadFromFile("textures/dbt.tga");
-	deck_builder_sprite.setTexture(deck_builder_texture);
-	deck_builder_sprite.setScale(600/deck_builder_sprite.getLocalBounds().width, 500/deck_builder_sprite.getLocalBounds().height);
+	texture_turn_light.loadFromFile("textures/turn_light.tga");
+	spr_turn_light.setTexture(texture_turn_light);
+	
+	turn_ligths_pos[0] = sf::Vector2f(70, 57);
+	turn_ligths_pos[1] = sf::Vector2f(500, 57);
+	spr_turn_light.setPosition(turn_ligths_pos[0]);
 	
 	card_texture.loadFromFile("textures/cardsFinal.tga");
 	
@@ -55,14 +60,14 @@ Board::Board()
 	player_one_score.setCharacterSize(10);
 	player_two_score.setCharacterSize(10);
 	
-	player_one_score.setPosition(255, 95);
+	player_one_score.setPosition(250, 95);
 	player_two_score.setPosition(340, 95);
 	
 	// We set the default string for player two score bcs he goes second, hence his score is updated later
 	player_two_score.setString("0");
 	
 	// Buttons
-	end_turn_btn.setFillColor(sf::Color(0, 0, 0, 0));
+	end_turn_btn.setFillColor(sf::Color::Black);
 	end_turn_btn.setSize(sf::Vector2f(105, 24));
 	end_turn_btn.setPosition(299, 431);
 	
@@ -74,7 +79,7 @@ Board::Board()
 	end_turn_text.setPosition(sf::Vector2f(351.5, 443));
 	
 	
-	stand_btn.setFillColor(sf::Color(0, 0, 0, 0));
+	stand_btn.setFillColor(sf::Color::Black);
 	stand_btn.setSize(sf::Vector2f(105, 24));
 	stand_btn.setPosition(412, 431);
 	
@@ -86,3 +91,4 @@ Board::Board()
 	stand_text.setPosition(sf::Vector2f(464.5, 443));
 	
 }
+

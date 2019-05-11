@@ -11,7 +11,8 @@ struct Player
 	// Maybe those two belong in Game class
 	int score = 0;
 	int wins = 0;
-	Player();
+	bool ready = false;
+	void Init();
 };
 
 #endif

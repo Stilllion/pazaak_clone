@@ -4,19 +4,18 @@
 #include "Player.h"
 #include <random>
 #include <chrono>
-#include "States.h"
 #include <iostream>
-
-#include <SFML/Network.hpp>
-
-
 
 using namespace sf;
 
+#define mouse_position static_cast<sf::Vector2f>(sf::Mouse::getPosition(window))
+enum States {start_game, pause_state, game_over, player_one_turn, player_two_turn,
+			 p1WinSet, p1LostSet, p1WinGame, p1LostGame, game_tie, set_tie, waiting_for_player, round_over};
 struct Game
 {
-	States current_state; //= States::player_one_turn;
 	
+	States current_state; //= States::player_one_turn;
+	sf::RenderWindow& window;
 	// RNDN generator
 	std::mt19937 mt;
 	std::uniform_int_distribution<int> dist;
@@ -38,15 +37,22 @@ struct Game
 	void HandleUserInput();
 	void HandleAIinput();
 	
+	void PopUp();
+	int Rules();
+	void CheckWinCond();
+	void EndRound();
+	
 	// for dbg
 	void HandleInput();
 	void On_receive();
 	
 	void ConvertBackToFace(sf::Sprite& card_to_convert, int card_number);
 	void Reset();
+	
+	void FlipCard(int card_index);
 	// SFML utils
-	sf::RenderWindow window;
-	sf::Event event;
+	//sf::RenderWindow window;
+	//sf::Event event;
 	sf::Clock clock;
 	sf::Time elapsed;
 	float frametime = 1.0/15.0;
@@ -74,24 +80,18 @@ struct Game
 	std::vector<sf::Sprite> player_hand;
 	std::vector<sf::Sprite> AI_hand;
 	std::vector<sf::Sprite> available_cards;
+	std::array<sf::CircleShape, 4> flipable_cards;
+	//std::array<sf::Vector2f, 4> flip_icon_positions;
 	
-	int round_count = 1;
+	int round_count = 0;
+	
 	Board board;
 	Player p1;
 	Player p2;
 
 	
-	Game();
+	Game(sf::RenderWindow& w);
 
-// NETWORKING
-// Network stuff
-	sf::TcpListener listener;
-	sf::TcpSocket client;
-	sf::Packet packet;
-	sf::TcpSocket socket;
-	
-	int Server();
-	int Client();
 	bool client_connected = false;
 	bool is_server = false;
 	bool is_client = false;
@@ -100,7 +100,28 @@ struct Game
 	bool received = false;
 	bool sent = false;
 	
-
+	bool player_init = true;
+	
+	// Pop-up messages
+	sf::Texture youWinSet_texture;
+	sf::Texture youWinSet_HL_texture;
+	
+	sf::Texture youLostSet_texture;
+	sf::Texture youLostSet_HL_texture;
+	
+	sf::Texture youWinGame_texture;
+	sf::Texture youWinGame_HL_texture;
+	
+	sf::Texture youLostGame_texture;
+	sf::Texture youLostGame_HL_texture;
+	
+	sf::Texture waiting_texture;
+	
+	sf::Texture flip_icon_texture;
+	
+	sf::Sprite popup_spr;
+	
+	sf::Sprite flip_icon;
 };
 
 #endif

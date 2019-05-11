@@ -1,224 +1,116 @@
 #include "Game.h"
-
-sf::Packet& operator >>(sf::Packet& packet, Player& p){
-	return packet >> p.score >> p.end_turn >> p.standing >> p.score >> p.hand[0] >> p.hand[1] >> p.hand[2] >> p.hand[3];
-}
-
-sf::Packet& operator <<(sf::Packet& packet, Player& p){
-	return packet << p.score << p.end_turn << p.standing << p.score << p.hand[0] << p.hand[1] << p.hand[2] << p.hand[3];
-}
-	bool client_connected = false;
-	bool is_client = false;
-	int server_mode = -1;
-	Game g;
+#include "MainMenu.h"
+#include "states.h"
+#include "DeckBuilder.h"
 	
-	// Client
-	sf::TcpSocket socket;
-	
-	// Server
-	sf::TcpListener listener;
-	sf::TcpSocket client;	
-
-int Receive(){
-	
-	client.setBlocking(false);
-	socket.setBlocking(false);
-	
-	static sf::Packet packet;
-	
-	if(!is_client){
-		//std::cout << "TRY RECEIVE SERVER" << std::endl;
-		sf::Socket::Status status = client.receive(packet);
-		if(status == sf::Socket::NotReady){
-		//	std::cout << "CLIENT NOT READY" << std::endl;
-			return 0;
-		}
-		if(status == sf::Socket::Error){
-			std::cout << "ERROR" << std::endl;
-			return 0;
-		}
-		if(status == sf::Socket::Done){
-			std::cout << "SERVER RECEIVED" << std::endl;
-			packet >> g.p2_draw_card_number >> g.p2_hand_card_number >> g.p2;
-			
-			g.received = true;
-		}
-	}
-	
-	if(is_client){
-		//std::cout << "TRY RECEIVE CLIENT" << std::endl;
-		sf::Socket::Status status = socket.receive(packet);
-		if(status == sf::Socket::NotReady){
-		//	std::cout << "SERVER NOT READY" << std::endl;
-			return 0;
-		}
-		if(status == sf::Socket::Error){
-			std::cout << "RECEIVE ERROR" << std::endl;
-			return 0;
-		}
-		if(status == sf::Socket::Done){
-			std::cout << "CLIENT RECEIVED" << std::endl;
-			packet >> g.p2_draw_card_number >> g.p2_hand_card_number >> g.p2;
-			
-			g.received = true;
-		}
-		// If we did not receive anything useful
-	}
-	return 0;
-}
-
-int Listen(){
-	// Bind listner to a port
-	//listener.setBlocking(false);
-	if(listener.listen(25565) != sf::Socket::Done){
-		std::cout  <<  "NO connections" << std::endl;
-		return 0;
-	}
-	// accept connection
-	if(listener.accept(client) != sf::Socket::Done){
-		//std::cout  << "Something went wrong \n";
-		return 0;
-	} else {
-		std::cout << "Connected! >> " << client.getRemoteAddress() << std::endl;
-		g.current_state = States::player_one_turn;
-		client_connected = true;
-		is_client = false;
-		return 1;
-	}
-}
-
-int Connect(){
-	
-	//socket.setBlocking(false);
-	sf::Socket::Status status = socket.connect("192.168.56.1", 25565);
-	//sf::Socket::Status status = socket.connect("127.0.0.1", 25565);
-	
-	if(status != sf::Socket::Done){
-		std::cout  << "Could not connect" << std::endl;
-		return 0;
-	} else {
-		client_connected = true;
-		g.current_state = States::player_two_turn;
-		is_client = true;
-		return 1;
-	}
-}
-
-int Send(){
-	/*static*/ sf::Packet packet;
-	client.setBlocking(false);
-	socket.setBlocking(false);
-	packet << g.p1_draw_card_number << g.p1_hand_card_number << g.p1;
-	
-	if(is_client){
-		if(socket.send(packet) != sf::Socket::Done){
-			std::cout << "Couldn't send" << std::endl;
-		} else {
-			std::cout << "SENT!" << std::endl;
-			g.p2_hand_card_number = 999;
-			g.p2_draw_card_number = 999;
-			g.p1_hand_card_number = 999;
-			g.p1_draw_card_number = 999;
-			g.p1.end_turn = false;
-		}
-	}
-	if(!is_client){
-		//std::cout << "About to send" << std::endl;
-		if(client.send(packet) != sf::Socket::Done){
-			std::cout << "Couldn't send" << std::endl;
-		} else {
-			std::cout << "SENT!" << std::endl;
-			g.p2_hand_card_number = 999;
-			g.p2_draw_card_number = 999;
-			g.p1_hand_card_number = 999;
-			g.p1_draw_card_number = 999;
-			g.p1.end_turn = false;
-		}
-	}
-	return 0;
-}
-
-	
-int Server(){
-	
-	sf::Clock clock;
-	sf::Time elapsed;
-	float tick = 1.0/20.0;
-	std::cout << "Thread started" << std::endl;
-	std::cout << "server_mode " << server_mode << std::endl;
-	clock.restart();
-	while(1){
-		while(elapsed.asSeconds() > tick){
-			//TIMEOUTS += elapsed.asSeconds();
-			if(server_mode == 1 && !client_connected){
-				Listen();
-			}
-			if(server_mode == 0 && !client_connected){
-				Connect();
-			}
-			if(client_connected){
-				//std::cout << g.ready_to_send << std::endl;
-				if(g.ready_to_send){
-					Send();
-					g.ready_to_send = false;
-				}
-				Receive();
-			}
-			elapsed -= sf::seconds(tick);
-		}
-		//std::cout << "TICK!" << std::endl;
-		elapsed += g.clock.restart();
-	}
+void ExitGame(Game& g)
+{
+	g.Reset();
+	g.current_state = States::player_one_turn;
 }	
+
+void NetworkShutDown(UDP& udp_net, TCP& tcp_net){
+	tcp_net.server_is_on = false;
+	tcp_net.client_connected = false;
+	tcp_net.server_mode = -1;
+	tcp_net.is_client = false;
+	
+	udp_net.host_found = false;
+	udp_net.cancel = true;
+	udp_net.client = false;
+
+}
 
 int main()
 {
-	g.current_state = States::start_game;
+	enum ProgramStates {main_menu, game, deck_builder};
+	ProgramStates program_state;
+	bool thread_launched = false;
 	
-	sf::Thread server_thread(&Server);
-	///sf::Thread client_thread(&Connect);
+	sf::RenderWindow window;
+	sf::Event event;
 	
-	/*sf::Thread send_thread(&Send);
-	sf::Thread receive_thread(&Receive);*/
+	window.create(sf::VideoMode(600, 500), "Pazaak", sf::Style::Default);
+	window.setVerticalSyncEnabled(true);
 	
-	while(g.window.isOpen()){
-		while(g.window.pollEvent(g.event)){
-			if(g.event.type == sf::Event::Closed){
-				g.window.close();
+	Game g(window);
+	DeckBuilder db(window);
+	
+	UDP udp_net;
+	TCP tcp_net(g);
+	
+	MainMenu menu(window, udp_net, tcp_net);
+	
+	sf::Thread tcp_thread(&TCP::Net, &tcp_net);
+	sf::Thread udp_thread(&UDP::Run, &udp_net);
+
+	program_state = ProgramStates::main_menu;
+	//program_state = ProgramStates::game;
+	//program_state = ProgramStates::deck_builder;
+	while(window.isOpen()){
+		while(window.pollEvent(event)){
+			if(event.type == sf::Event::Closed){
+				window.close();
+			}
+			if(event.type == sf::Event::Resized){
+				sf::Vector2f new_size = static_cast<sf::Vector2f>(window.getSize());
+				new_size.y = new_size.x / 1.2;
+				
+				window.setSize(static_cast<sf::Vector2u>(new_size));
+			}	
+		}
+		switch(program_state){
+			case ProgramStates::main_menu : {
+				menu.Update();
+				menu.Render();
+				if(menu.start_game && !thread_launched){
+					std::cout << "Launching thread Client: " << udp_net.client <<std::endl;
+					udp_thread.launch();
+					thread_launched = true;
+				}
+				if(!menu.start_game && thread_launched){
+					std::cout << "SHUTTING DOWN THE SERVER" << std::endl;
+					NetworkShutDown(udp_net, tcp_net);
+					thread_launched = false;
+				}
+				if(udp_net.host_found){
+					std::cout << "Supposte to tun TCP thread now" << std::endl;
+					tcp_net.server_adress = udp_net.sender_adress;
+					std::cout << "Server address just to make sure " << tcp_net.server_adress << std::endl;
+					tcp_thread.launch();
+					udp_net.host_found = false;
+				}
+				if(tcp_net.client_connected){
+					program_state = ProgramStates::game;
+				}
+				if(menu.curr_subMenu == menu.SubMenus::deck_builder){
+					program_state = ProgramStates::deck_builder;
+					menu.curr_subMenu = menu.SubMenus::main_menu;
+				}
+			}
+			break;
+			case ProgramStates::game : {
+				g.UpdateGame();
+				g.RenderGame();
+				if(g.current_state == States::game_over){
+					ExitGame(g);
+					NetworkShutDown(udp_net, tcp_net);
+					program_state = ProgramStates::main_menu;
+					menu.curr_subMenu = menu.SubMenus::main_menu;
+				}
+				g.elapsed += g.clock.restart();
+			}
+			break;
+			case ProgramStates::deck_builder : {
+				db.Update();
+				db.Render();
+				if(db.cancel || db.saved){
+					program_state = ProgramStates::main_menu;
+					db.Reset();
+				}
 			}
 		}
-		if(g.current_state == States::deck_builder){
-			g.UpdateDeckBuilder();
-			g.RenderDeckBuilder();
-			continue;
-		}
-		if(g.current_state == States::start_game){
-			server_mode = g.UpdateStartScreen();
-
-			if(server_mode == 1 || server_mode == 0){
-				server_thread.launch();
-				g.current_state = States::cancel_game;
-			}
-
-			g.RenderStartScreen();
-			continue;
-		}
-		if(g.current_state == States::cancel_game){
-			// MOVE THIS IF TO THE SERVER THREAD!!!
-			if(client_connected){
-				g.current_state = States::player_one_turn;
-			}
-			g.RenderStartScreen();
-			continue;
-
-		}
-
-		g.UpdateGame();
-		g.RenderGame();
-		//receive_thread.launch();
-	
-		g.elapsed += g.clock.restart();
-	} 
+	}
 }
 
 

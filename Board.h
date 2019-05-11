@@ -12,12 +12,16 @@ struct Board
 	sf::Texture backGround_texture;
 	sf::Texture deck_builder_texture;
 	sf::Texture card_texture;
+	sf::Texture texture_turn_light;
 	sf::Text card_number;
 	sf::Text player_name;
 	sf::Text player_one_score;
 	sf::Text player_two_score;
 	sf::Sprite backGround;
 	sf::Sprite deck_builder_sprite;
+	sf::Sprite spr_turn_light;
+	
+	std::array<sf::Vector2f, 2> turn_ligths_pos;
 	//sf::Sprite card; Created at Init();
 	// !!!!!!!!!! sprite.setTextureRect(sf::IntRect(10, 10, 32, 32)); !!!!!!!!!!!!!
 	// USE THIS TO LOAD A NEEDED CARD, there is no need to have 100500 textures for that
